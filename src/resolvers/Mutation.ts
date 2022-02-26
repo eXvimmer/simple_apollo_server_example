@@ -57,6 +57,7 @@ export const Mutation = {
     },
     { prisma }: IContext
   ): Promise<PostPayload> => {
+    // TODO: add authentication and authorization
     if (!title && !content) {
       return {
         userErrors: [
@@ -92,6 +93,31 @@ export const Mutation = {
       },
     });
 
+    return {
+      userErrors: [],
+      post,
+    };
+  },
+
+  postDelete: async (
+    _: unknown,
+    { postId }: { postId: string },
+    { prisma }: IContext
+  ): Promise<PostPayload> => {
+    // TODO: add authentication & authorization
+    const thePost = await prisma.post.findUnique({
+      where: { id: parseInt(postId) },
+    });
+
+    if (!thePost) {
+      // NOTE: this might not be the best practice
+      return {
+        userErrors: [{ message: "Post does not exist" }],
+        post: null,
+      };
+    }
+
+    const post = await prisma.post.delete({ where: { id: +postId } });
     return {
       userErrors: [],
       post,
