@@ -1,9 +1,11 @@
 import { Post } from ".prisma/client";
 import { IContext } from "../index";
 
-interface PostCreateArgs {
-  title: string;
-  content: string;
+interface PostArgs {
+  post: {
+    title?: string;
+    content?: string;
+  };
 }
 
 interface PostPayload {
@@ -16,7 +18,7 @@ interface PostPayload {
 export const Mutation = {
   postCreate: async (
     _: unknown,
-    { title, content }: PostCreateArgs,
+    { post: { title, content } }: PostArgs,
     { prisma }: IContext
   ): Promise<PostPayload> => {
     if (!title || !content) {
@@ -35,6 +37,58 @@ export const Mutation = {
         title,
         content,
         authorId: 1, // TODO: authenticate and set to user id
+      },
+    });
+
+    return {
+      userErrors: [],
+      post,
+    };
+  },
+
+  postUpdate: async (
+    _: unknown,
+    {
+      postId,
+      post: { title, content },
+    }: {
+      postId: string;
+      post: PostArgs["post"];
+    },
+    { prisma }: IContext
+  ): Promise<PostPayload> => {
+    if (!title && !content) {
+      return {
+        userErrors: [
+          { message: "To update a post, title and content must be provided" },
+        ],
+        post: null,
+      };
+    }
+
+    const thePost = await prisma.post.findUnique({
+      where: { id: parseInt(postId) },
+    });
+
+    if (!thePost) {
+      return {
+        userErrors: [{ message: "Post does not exist" }],
+        post: null,
+      };
+    }
+
+    let payload = {
+      title,
+      content,
+    };
+
+    if (!title) delete payload.title;
+    if (!content) delete payload.content;
+
+    const post = await prisma.post.update({
+      where: { id: parseInt(postId) },
+      data: {
+        ...payload,
       },
     });
 
