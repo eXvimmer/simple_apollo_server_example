@@ -51,7 +51,7 @@ const typeDefs = gql`
 
   type AuthPayload {
     userErrors: [UserError!]!
-    user: String
+    token: String
   }
 
   input PostInput {

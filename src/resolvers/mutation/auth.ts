@@ -60,19 +60,22 @@ export const authResolvers = {
 
     const user = await prisma.user.create({
       data: {
-        email, // TODO: you may want to remove this
+        email,
         name,
         password: hashedPass,
       },
     });
 
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SIGNATURE!,
-      {
-        expiresIn: 360000,
-      }
-    );
+    await prisma.profile.create({
+      data: {
+        bio,
+        userId: user.id,
+      },
+    });
+
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SIGNATURE!, {
+      expiresIn: 360000,
+    });
 
     return {
       userErrors: [],
