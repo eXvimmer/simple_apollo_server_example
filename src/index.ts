@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ApolloServer } from "apollo-server";
 import { PrismaClient } from "@prisma/client";
 import resolvers from "./resolvers";
