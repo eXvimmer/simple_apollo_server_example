@@ -4,9 +4,11 @@ import jwt from "jsonwebtoken";
 import { IContext } from "../..";
 
 interface SignupArgs {
+  credentials: {
+    password: string;
+    email: string;
+  };
   name: string;
-  email: string;
-  password: string;
   bio: string;
 }
 
@@ -18,7 +20,7 @@ interface AuthPayload {
 export const authResolvers = {
   signup: async (
     _: any,
-    { email, password, bio, name }: SignupArgs,
+    { credentials: { email, password }, bio, name }: SignupArgs,
     { prisma }: IContext
   ): Promise<AuthPayload> => {
     const isEmail = validator.isEmail(email);
@@ -72,6 +74,46 @@ export const authResolvers = {
         userId: user.id,
       },
     });
+
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SIGNATURE!, {
+      expiresIn: 360000,
+    });
+
+    return {
+      userErrors: [],
+      token,
+    };
+  },
+
+  signin: async (
+    _: any,
+    {
+      credentials: { email, password },
+    }: { credentials: SignupArgs["credentials"] },
+    { prisma }: IContext
+  ): Promise<AuthPayload> => {
+    if (!email || !password) {
+      return {
+        userErrors: [{ message: "invalid credentials" }],
+        token: null,
+      };
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return {
+        userErrors: [{ message: "invalid credentials" }],
+        token: null,
+      };
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return {
+        userErrors: [{ message: "invalid credentials" }],
+        token: null,
+      };
+    }
 
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SIGNATURE!, {
       expiresIn: 360000,
