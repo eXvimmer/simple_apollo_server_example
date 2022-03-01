@@ -1,5 +1,6 @@
 import { Post } from "@prisma/client";
 import { IContext } from "../../index";
+import { canUserMutateThePost } from "../../utils/canUserMutateThePost";
 
 interface PostArgs {
   post: {
@@ -8,7 +9,7 @@ interface PostArgs {
   };
 }
 
-interface PostPayload {
+export interface PostPayload {
   userErrors: {
     message: string;
   }[];
@@ -62,9 +63,15 @@ export const postResolvers = {
       postId: string;
       post: PostArgs["post"];
     },
-    { prisma }: IContext
+    { prisma, userInfo }: IContext
   ): Promise<PostPayload> => {
-    // TODO: add authentication and authorization
+    if (!userInfo) {
+      return {
+        userErrors: [{ message: "forbidden (unauthenticated)" }],
+        post: null,
+      };
+    }
+
     if (!title && !content) {
       return {
         userErrors: [
@@ -74,15 +81,14 @@ export const postResolvers = {
       };
     }
 
-    const thePost = await prisma.post.findUnique({
-      where: { id: parseInt(postId) },
+    const postPayload = await canUserMutateThePost({
+      userId: userInfo.userId,
+      postId: +postId,
+      prisma,
     });
 
-    if (!thePost) {
-      return {
-        userErrors: [{ message: "Post does not exist" }],
-        post: null,
-      };
+    if (postPayload.userErrors.length) {
+      return postPayload;
     }
 
     let payload = {
@@ -109,22 +115,27 @@ export const postResolvers = {
   postDelete: async (
     _: unknown,
     { postId }: { postId: string },
-    { prisma }: IContext
+    { prisma, userInfo }: IContext
   ): Promise<PostPayload> => {
-    // TODO: add authentication & authorization
-    const thePost = await prisma.post.findUnique({
-      where: { id: parseInt(postId) },
-    });
-
-    if (!thePost) {
-      // NOTE: this might not be the best practice
+    if (!userInfo) {
       return {
-        userErrors: [{ message: "Post does not exist" }],
+        userErrors: [{ message: "forbidden (unauthenticated)" }],
         post: null,
       };
     }
 
+    const postPayload = await canUserMutateThePost({
+      userId: userInfo.userId,
+      postId: +postId,
+      prisma,
+    });
+
+    if (postPayload.userErrors.length) {
+      return postPayload;
+    }
+
     const post = await prisma.post.delete({ where: { id: +postId } });
+
     return {
       userErrors: [],
       post,
