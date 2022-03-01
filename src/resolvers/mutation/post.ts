@@ -141,4 +141,78 @@ export const postResolvers = {
       post,
     };
   },
+
+  postPublish: async (
+    _: unknown,
+    { postId }: { postId: string },
+    { prisma, userInfo }: IContext
+  ): Promise<PostPayload> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{ message: "forbidden (unauthenticated)" }],
+        post: null,
+      };
+    }
+
+    const postPayload = await canUserMutateThePost({
+      userId: userInfo.userId,
+      postId: +postId,
+      prisma,
+    });
+
+    if (postPayload.userErrors.length) {
+      return postPayload;
+    }
+
+    const post = await prisma.post.update({
+      where: {
+        id: +postId,
+      },
+      data: {
+        published: true,
+      },
+    });
+
+    return {
+      userErrors: [],
+      post,
+    };
+  },
+
+  postUnpublish: async (
+    _: unknown,
+    { postId }: { postId: string },
+    { prisma, userInfo }: IContext
+  ): Promise<PostPayload> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{ message: "forbidden (unauthenticated)" }],
+        post: null,
+      };
+    }
+
+    const postPayload = await canUserMutateThePost({
+      userId: userInfo.userId,
+      postId: +postId,
+      prisma,
+    });
+
+    if (postPayload.userErrors.length) {
+      return postPayload;
+    }
+
+    const post = await prisma.post.update({
+      where: {
+        id: +postId,
+      },
+      data: {
+        published: false,
+      },
+    });
+
+    return {
+      userErrors: [],
+      post,
+    };
+  },
 };
