@@ -1,5 +1,7 @@
 import { gql } from "apollo-server";
 
+// TODO: add a resolver for post.user
+
 const typeDefs = gql`
   type Query {
     posts: [Post!]!

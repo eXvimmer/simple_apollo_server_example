@@ -19,8 +19,15 @@ export const postResolvers = {
   postCreate: async (
     _: unknown,
     { post: { title, content } }: PostArgs,
-    { prisma }: IContext
+    { prisma, userInfo }: IContext
   ): Promise<PostPayload> => {
+    if (!userInfo) {
+      return {
+        userErrors: [{ message: "forbidden (unauthenticated)" }],
+        post: null,
+      };
+    }
+
     if (!title || !content) {
       return {
         userErrors: [
@@ -36,7 +43,7 @@ export const postResolvers = {
       data: {
         title,
         content,
-        authorId: 1, // TODO: authenticate and set to user id
+        authorId: userInfo.userId,
       },
     });
 
