@@ -21,4 +21,16 @@ export const Query = {
     });
     return posts;
   },
+
+  profile: (
+    _: unknown,
+    { userId }: { userId: string },
+    { prisma }: IContext
+  ) => {
+    return prisma.profile.findUnique({
+      where: {
+        userId: parseInt(userId),
+      },
+    });
+  },
 };
