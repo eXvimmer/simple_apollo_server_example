@@ -2,6 +2,15 @@ import { Post } from "@prisma/client";
 import { IContext } from "..";
 
 export const Query = {
+  me: (_: unknown, __: unknown, { prisma, userInfo }: IContext) => {
+    if (!userInfo) return null;
+    return prisma.user.findUnique({
+      where: {
+        id: userInfo.userId,
+      },
+    });
+  },
+
   posts: async (
     _: unknown,
     __: unknown,
