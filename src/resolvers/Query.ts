@@ -13,12 +13,14 @@ export const Query = {
 
   posts: async (
     _: unknown,
-    __: unknown,
+    { take, skip }: { take: number, skip: number },
     { prisma }: IContext
   ): Promise<Post[]> => {
     const posts = await prisma.post.findMany({
       where: { published: true },
       orderBy: [{ createdAt: "desc" }],
+      skip,
+      take
     });
     return posts;
   },
